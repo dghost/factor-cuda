@@ -1,0 +1,45 @@
+Description: CUDA accelerated integer factorization
+
+Framework used: 
+-CUDA
+-OpenMP
+
+Platforms supported:
+-Ubuntu (tested under 12.10 x86/x64 using provided CUDA framework)
+-OS X (tested under 10.8.3 x64 using Xcode command line tools and Nvidia CUDA package)
+
+Compilation/execution:
+1) make benchmark -or- make benchmark-mp
+
+Be warned that the benchmark can take several minutes to run (measured on a quad-core 3.4Ghz i5 w/ GTX670). The probabilistic nature of the algorithm implemented can make run times very inconsistent: sometimes, it converges on a solution extremely fast. Sometimes, it takes a minute or two to converge on a solution. This generally only affects the CPU, but it can also affect the GPU as well. If it does not show a performance improvement, simply run it again.
+
+
+Accepted build targets are:
+	'factor'			: Single-threaded build - this is the default build target
+	'factor-mp'		: OpenMP enabled build
+	'benchmark' 	: Single-threaded benchmark using a pre-determined set of numbers
+	'benchmark-mp	: OpenMP enabled benchmark using a pre-determined set of numbers
+	'clean'			: Cleans working directory
+	
+Details:
+This program implements Pollard's Rho <http://en.wikipedia.org/wiki/Pollard's_rho_algorithm> as both a CPU native function and as a CUDA kernel. The CPU version of it supports multi-threading through OpenMP, and the CUDA kernel supports launching with an arbitrary block width and number of blocks. Pollard's Rho is essentially a probabilistic algorithm, with the time it takes for a modulus cycle to converge on a factor being based on the initial value and the pseudo-random function f(x). As a result, despite this not being a traditional parallel computing task it does benefit from additional threads as it increases the likelihood of finding a quickly converging modulus cycle. An interesting side effect of the probabilistic nature of this problem is that performance benefits come from working on batches of numbers, not from solving individual problems (although they may show a performance benefit). While I search through the numbers in a fairly serial manner, it is possible that it could be optimized so that it works on multiple numbers at the same time, further increasing efficiency.
+
+The benchmarks execute with a block-width of 256 and block-count of 256. This can, of course, be adjusted. Larger values here signifcantly reduce setup costs, but decrease the likelihood of finding a convergine modulus cycle. As with everything, there is likely room for tuning the performance through these values.
+
+Unfortunately, this implementation has several limitations. The first is that Pollard's Rho is actually an incredibly naive integer factorization algorithm. There are more advanced algorithms in existance, such as the Quadratic sieve, however they are extremely complicated to implement. The second limitation is that the time it takes to run Pollard's Rho is dependant on the size of the smallest factor. This makes it's behavior across a large set of numbers somewhat unpredictable - sometimes it can converge very quickly, sometimes it can take a really, really long time. The final limitation is that it had to implemented using 64bit signed integers, limiting the maximum number it can operate on numbers up to 2^63 - 1, drastically limiting it's usefulness.
+
+The CUDA kernel operates by performing the following steps:
+	1. Initialize a block of memory for use by individual threads, comprised of the x and y values used by Pollard's Rho and the a and c values used by f(x).
+	2. Upload the block to memory.
+	3. While a result hasn't been found:
+		a. Execute a single pass of the algorithm across all threads
+		b. Copy the device-global result variable back to host memory and test if a factor has been found
+	4. Teardown and return the result
+	
+The syntax of the program is as follows:
+	Usage: [-v] <block width> <number of blocks> <numbers to check>
+	
+	-v					: Enables Verbose Mode
+	<block width>		: Number of threads in each CUDA block
+	<number of blocks>  : Number of CUDA blocks to instantiate
+	<numbers to check>  : Arbitrary sized list of numbers to factor

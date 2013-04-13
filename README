@@ -15,11 +15,11 @@ Be warned that the benchmark can take several minutes to run (measured on a quad
 
 
 Accepted build targets are:
-	'factor'			: Single-threaded build - this is the default build target
-	'factor-mp'		: OpenMP enabled build
+	'factor'	: Single-threaded build - this is the default build target
+	'factor-mp'	: OpenMP enabled build
 	'benchmark' 	: Single-threaded benchmark using a pre-determined set of numbers
 	'benchmark-mp	: OpenMP enabled benchmark using a pre-determined set of numbers
-	'clean'			: Cleans working directory
+	'clean'		: Cleans working directory
 	
 Details:
 This program implements Pollard's Rho <http://en.wikipedia.org/wiki/Pollard's_rho_algorithm> as both a CPU native function and as a CUDA kernel. The CPU version of it supports multi-threading through OpenMP, and the CUDA kernel supports launching with an arbitrary block width and number of blocks. Pollard's Rho is essentially a probabilistic algorithm, with the time it takes for a modulus cycle to converge on a factor being based on the initial value and the pseudo-random function f(x). As a result, despite this not being a traditional parallel computing task it does benefit from additional threads as it increases the likelihood of finding a quickly converging modulus cycle. An interesting side effect of the probabilistic nature of this problem is that performance benefits come from working on batches of numbers, not from solving individual problems (although they may show a performance benefit). While I search through the numbers in a fairly serial manner, it is possible that it could be optimized so that it works on multiple numbers at the same time, further increasing efficiency.
@@ -39,7 +39,7 @@ The CUDA kernel operates by performing the following steps:
 The syntax of the program is as follows:
 	Usage: [-v] <block width> <number of blocks> <numbers to check>
 	
-	-v					: Enables Verbose Mode
+	-v			: Enables Verbose Mode
 	<block width>		: Number of threads in each CUDA block
-	<number of blocks>  : Number of CUDA blocks to instantiate
-	<numbers to check>  : Arbitrary sized list of numbers to factor
+	<number of blocks>  	: Number of CUDA blocks to instantiate
+	<numbers to check>  	: Arbitrary sized list of numbers to factor
